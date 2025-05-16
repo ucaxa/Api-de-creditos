@@ -53,7 +53,7 @@ Solução completa para gestão de créditos com:
 | API Backend          | http://localhost:8080             |
 | Swagger UI           | http://localhost:8080/swagger-ui  |
 | Kafka UI             | http://localhost:8081             |   
-| PostgreSQL           | localhost:5432                    |
+
 
 
 
