@@ -1,0 +1,154 @@
+services:
+  # Banco de dados PostgreSQL
+  db:
+    image: postgres:15-alpine
+    platform: linux/amd64
+    container_name: postgres_db
+    environment:
+      POSTGRES_USER: creditos_user
+      POSTGRES_PASSWORD: creditos123
+      POSTGRES_DB: creditos_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U creditos_user -d creditos_db"]
+      interval: 5s
+      timeout: 10s
+      retries: 10
+    networks:
+      - backend_network
+
+  # Zookeeper (requerido pelo Kafka)
+  zookeeper:
+    image: zookeeper:3.8.1
+    container_name: zookeeper
+    hostname: zookeeper
+    restart: unless-stopped
+    ports:
+      - "2181:2181"
+      - "2888:2888"
+      - "3888:3888"
+    environment:
+      ZOO_MY_ID: 1
+      ZOO_SERVERS: "server.1=zookeeper:2888:3888;2181"
+      ZOO_4LW_COMMANDS_WHITELIST: "*"
+      ZOO_MAX_CLIENT_CNXNS: 1000
+    volumes:
+      - zookeeper_data:/data
+      - zookeeper_log:/datalog
+    healthcheck:
+      test: ["CMD-SHELL", "zkServer.sh status 2>/dev/null || exit 1"]
+      interval: 30s
+      timeout: 120s
+      retries: 10
+      start_period: 60s
+    networks:
+      - kafka_network
+
+  # Kafka
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    container_name: kafka
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: "1"
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: "1"
+      KAFKA_ZOOKEEPER_SESSION_TIMEOUT_MS: "60000"
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics --list --bootstrap-server localhost:9092 || exit 1"]
+      interval: 10s
+      timeout: 30s
+      retries: 5
+      start_period: 60s
+    networks:
+      - kafka_network
+      - backend_network
+
+  # Backend Spring Boot
+  backend:
+    build:
+      context: ./creditos-api
+      dockerfile: Dockerfile
+    container_name: creditos_backend
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/creditos_db?connectTimeout=5000&socketTimeout=30000
+      SPRING_DATASOURCE_USERNAME: creditos_user
+      SPRING_DATASOURCE_PASSWORD: creditos123
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      JAVA_TOOL_OPTIONS: "-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0"
+      MANAGEMENT_ENDPOINT_HEALTH_PROBES_ENABLED: "true"
+      MANAGEMENT_HEALTH_KAFKA_ENABLED: "false"
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 300s
+      retries: 10
+      start_period: 300s
+    networks:
+      - backend_network
+      - frontend_network
+
+  # Frontend Angular
+  frontend:
+    build:
+      context: ./creditos-front
+      dockerfile: Dockerfile
+    container_name: creditos_frontend
+    ports:
+      - "4000:4000"
+    environment:
+      API_URL: http://backend:8080
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - frontend_network
+      
+
+  # Kafka UI (Opcional)
+  kafka-ui:
+    image: provectuslabs/kafka-ui
+    container_name: kafka_ui
+    ports:
+      - "8081:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local-kafka
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+      KAFKA_CLUSTERS_0_ZOOKEEPERCONNECT: zookeeper:2181
+    depends_on:
+      kafka:
+        condition: service_healthy
+    networks:
+      - kafka_network
+
+volumes:
+  postgres_data:
+  zookeeper_data:
+  zookeeper_log:
+
+networks:
+  backend_network:
+    driver: bridge
+  frontend_network:
+    driver: bridge
+  kafka_network:
+    driver: bridge
