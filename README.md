@@ -34,7 +34,7 @@ Solução completa para gestão de créditos com:
 
 1. **Clone o projeto**:
    ```bash
-   git clone https://github.com/seu-usuario/creditos-app.git
+   https://github.com/ucaxa/Api-de-creditos.git
 
    
 1. **Inicialize o docker e execute o comando abaixo dentro de diretório que foi clonado**:
