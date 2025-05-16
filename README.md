@@ -37,12 +37,10 @@ Solução completa para gestão de créditos com:
    https://github.com/ucaxa/Api-de-creditos.git
 
    
-1. **Inicialize o docker e execute o comando abaixo dentro de diretório que foi clonado**:
+2. **Inicialize o docker e execute o comando abaixo dentro de diretório que foi clonado**:
    ```bash
    bash docker-compose up --build
 
- 1. **Inicialize o docker e execute o comando abaixo dentro de diretório que foi clonado**:
-    ```bash docker-compose up --build
   
 
 ## 🚀 Acesso aos serviços
