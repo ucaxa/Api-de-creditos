@@ -1,0 +1,29 @@
+/* Adicione estilos básicos para teste */
+.card {
+    border: 2px solid red; /* Estilo de teste */
+    padding: 1rem;
+  }
+  
+  /* Estilo responsivo */
+  @media (max-width: 768px) {
+    .card {
+      border-color: blue;
+    }
+  }
+
+  /* consulta-creditos.component.scss */
+.text-muted {
+    color: #6c757d;
+    font-style: italic;
+  }
+  
+  td {
+    vertical-align: middle;
+    
+    &:empty::before {
+      content: '-';
+      color: #6c757d;
+    }
+  }
+
+  

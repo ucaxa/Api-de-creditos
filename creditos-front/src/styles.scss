@@ -1,0 +1,25 @@
+@use 'bootstrap/scss/bootstrap' as bs;
+
+// Ajustes para o layout
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+app-header {
+  .navbar {
+    padding: bs.$spacer * 0.5 0;
+    
+    @include bs.media-breakpoint-up(lg) {
+      padding: bs.$spacer 0;
+    }
+  }
+
+  td {
+    white-space: nowrap;
+    overflow: visible;
+    color: inherit !important; /* Garante que não está sendo sobrescrito */
+  }
+
+}
